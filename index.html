@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Traffic Light Prediction</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 320px;
+    }
+    input[type="file"] {
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .preview {
+      margin-top: 15px;
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .prediction {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #16a34a;
+    }
+    .prediction.red {
+      color: #dc2626;
+    }
+    .prediction.yellow {
+      color: #d97706;
+    }
+    .prediction.green {
+      color: #16a34a;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const App = () => {
+      const [file, setFile] = React.useState(null);
+      const [preview, setPreview] = React.useState(null);
+      const [prediction, setPrediction] = React.useState("");
+
+      const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        setFile(selectedFile);
+        if (selectedFile) {
+          setPreview(URL.createObjectURL(selectedFile));
+        }
+      };
+
+      const handleUpload = async () => {
+        if (!file) {
+          alert("Please select an image");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const res = await fetch("http://localhost:8000/predict", {
+            method: "POST",
+            body: formData
+          });
+          const data = await res.json();
+          setPrediction(data.prediction);
+        } catch (err) {
+          console.error(err);
+          alert("Error sending image to API");
+        }
+      };
+
+      const getPredictionClass = (pred) => {
+        if (pred === "red") return "red";
+        if (pred === "yellow") return "yellow";
+        if (pred === "light_yellow") return "light_yellow";
+        if (pred === "green") return "green";
+        return "Unable to predict";
+      };
+
+      return (
+        <div className="container">
+          <h2>Traffic Light Prediction</h2>
+          <input type="file" accept="image/*" onChange={handleFileChange} />
+          {preview && <img src={preview} alt="preview" className="preview" />}
+          <button onClick={handleUpload}>Upload & Predict</button>
+          {prediction && (
+            <p className={`prediction ${getPredictionClass(prediction)}`}>
+              Traffic Light: {prediction}
+            </p>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
